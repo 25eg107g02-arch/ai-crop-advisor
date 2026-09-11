@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crop Suitability Advisor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f3f8f4;color:#1f2937;line-height:1.5}
+header{background:#176b43;color:white;padding:25px 20px}
+.header-content{max-width:1100px;margin:auto;display:flex;align-items:center;gap:15px}
+.logo{font-size:44px} header h1{font-size:30px} header p{opacity:.9}
+main{max-width:1100px;margin:30px auto;padding:0 20px}
+.intro{text-align:center;margin-bottom:25px}.intro h2{color:#176b43;font-size:28px;margin-bottom:8px}.intro p{color:#667085}
+.card,.crop-card,.table-box{background:white;border-radius:16px;box-shadow:0 5px 20px rgba(0,0,0,.07)}
+.card{padding:30px}.card h2{color:#176b43;margin-bottom:25px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.input-group{display:flex;flex-direction:column}label{font-weight:bold;margin-bottom:8px}
+input,select{padding:13px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px;background:#fff}
+input:focus,select:focus{outline:2px solid #5ab785}
+.hint{font-size:12px;color:#667085;margin-top:5px}
+button{width:100%;margin-top:25px;padding:15px;border:0;border-radius:9px;background:#176b43;color:#fff;font-size:17px;font-weight:bold;cursor:pointer}
+button:hover{background:#0f5132}
+#error{display:none;margin-top:18px;padding:12px;border-radius:8px;background:#ffe9e9;color:#a12626}
+.hidden{display:none}
+#resultSection{margin-top:35px}.result-title{margin-bottom:20px}.result-title h2{color:#176b43}.result-title p{color:#667085}
+.best{background:#176b43;color:white;border-radius:16px;padding:22px;margin-bottom:20px}
+.best h3{font-size:23px}.best-score{font-size:38px;font-weight:bold}
+.best small{opacity:.9}
+.table-box{overflow:hidden}.result-table{width:100%;border-collapse:collapse}
+.result-table th,.result-table td{text-align:left;padding:15px;border-bottom:1px solid #e5e7eb}
+.result-table th{background:#f8faf9;color:#176b43}.result-table td:last-child{font-size:21px;font-weight:bold;color:#176b43}
+.result-table tr:last-child td{border-bottom:0}
+.status{display:inline-block;margin-left:8px;padding:4px 9px;border-radius:20px;font-size:12px;background:#e6f5ed;color:#176b43}
+.status.mid{background:#fff4d6;color:#795600}.status.low{background:#ffe9e9;color:#a12626}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.crop-card{padding:20px;border-left:5px solid #176b43}.crop-card h3{color:#176b43;margin-bottom:8px}
+.crop-card p{color:#475467;margin:8px 0}.crop-card strong{color:#1f2937}
+.precaution{background:#fff8e6;border-radius:9px;padding:12px;margin-top:12px;color:#6b5200}
+.factors{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:13px}
+.factor{background:#f3f8f4;border-radius:8px;padding:9px;font-size:12px}.factor strong{display:block;color:#176b43}
+.notice{margin-top:25px;padding:20px;background:#fff8e6;border:1px solid #f0d27a;border-radius:12px}
+.notice h3{margin-bottom:8px}
+footer{text-align:center;padding:30px;margin-top:40px;background:#163d2b;color:white}footer p{opacity:.8;margin-top:5px}
+@media(max-width:700px){
+.form-grid,.cards{grid-template-columns:1fr}.factors{grid-template-columns:1fr 1fr}
+header h1{font-size:24px}.intro h2{font-size:23px}
+.result-table th,.result-table td{padding:11px 7px;font-size:14px}.result-table td:last-child{font-size:18px}
+.status{display:block;width:max-content;margin:5px 0 0}
+}
+</style>
+</head>
+<body>
+<header><div class="header-content"><div class="logo">🌱</div><div><h1>Crop Suitability Advisor</h1><p>Smart farming recommendation system</p></div></div></header>
+
+<main>
+<section class="intro">
+<h2>Find the Best Crop for Your Land</h2>
+<p>Get a transparent crop ranking from soil and climate conditions.</p>
+</section>
+
+<section class="card">
+<h2>🌾 Farm Details</h2>
+<div class="form-grid">
+<div class="input-group"><label>Soil Type</label>
+<select id="soil"><option value="">Select Soil</option><option value="black">Black Soil</option><option value="red">Red Soil</option><option value="clay">Clay Soil</option><option value="loamy">Loamy Soil</option><option value="alluvial">Alluvial Soil</option></select></div>
+<div class="input-group"><label>Temperature (°C)</label><input id="temp" type="number" step="0.1" placeholder="Example: 25"></div>
+<div class="input-group"><label>Humidity (%)</label><input id="humidity" type="number" min="0" max="100" step="0.1" placeholder="Example: 70"></div>
+<div class="input-group"><label>Rainfall (mm)</label><input id="rain" type="number" min="0" step="1" placeholder="Example: 120"><span class="hint">Use one consistent period, such as the relevant growing season.</span></div>
+<div class="input-group"><label>Soil pH</label><input id="ph" type="number" min="0" max="14" step="0.1" placeholder="Example: 6.5"></div>
+</div>
+<div id="error"></div>
+<button onclick="recommend()">🌱 Find Suitable Crops</button>
+</section>
+
+<section id="resultSection" class="hidden">
+<div class="result-title">
+<h2>Recommended Crops</h2>
+<p>Scores are capped below 100% because this prototype does not include every farming factor.</p>
+</div>
+<div id="best"></div>
+<div class="table-box">
+<table class="result-table"><thead><tr><th>#</th><th>Crop</th><th>Suitability</th></tr></thead><tbody id="rows"></tbody></table>
+</div>
+<div id="cards" class="cards"></div>
+<div class="notice">
+<h3>⚠️ Important Precautions</h3>
+<p><strong>Do not treat the score as a yield prediction.</strong> Before planting, verify a current soil test, N-P-K levels, local season, irrigation/water availability, crop variety, previous crop, pest and disease risk, and local agricultural/KVK advice. The website intentionally has a maximum displayed score of 95% because these additional factors are not measured here.</p>
+</div>
+</section>
+</main>
+
+<footer><h3>🌱 Smart Farming</h3><p>Crop Suitability Advisor © 2026</p></footer>
+
+<script>
+/*
+TRANSPARENT PROTOTYPE MODEL
+Soil        25%
+Temperature 25%
+Rainfall    25%
+Humidity    15%
+pH          10%
+
+Maximum display = 95%.
+Reason: the five inputs do not capture NPK, season, irrigation,
+location, variety, pests, diseases, crop duration, etc.
+This 5-point cap is a design safeguard, NOT a statistical probability.
+*/
+
+const crops=[
+{name:"Cotton",icon:"🌿",soil:["black","loamy","alluvial"],temp:[21,35],hum:[50,75],rain:[60,150],ph:[5.8,8.0],
+why:"Warm conditions and suitable well-drained soil are generally favorable for cotton.",
+prec:"Avoid waterlogging. Check locally recommended varieties and monitor important local insect pests."},
+{name:"Soybean",icon:"🫘",soil:["black","loamy","alluvial"],temp:[20,30],hum:[55,80],rain:[60,150],ph:[6.0,7.5],
+why:"Warm temperatures with adequate moisture and suitable soil can favor soybean.",
+prec:"Avoid prolonged waterlogging. Use a locally recommended variety and monitor disease risk in humid weather."},
+{name:"Maize",icon:"🌽",soil:["black","red","loamy","alluvial"],temp:[18,32],hum:[55,80],rain:[50,150],ph:[5.5,7.5],
+why:"Maize generally prefers warm conditions, adequate moisture and good drainage.",
+prec:"A dry spell can require irrigation. Maintain drainage and monitor locally important pests."},
+{name:"Pigeon Pea",icon:"🌱",soil:["black","red","loamy","alluvial"],temp:[20,32],hum:[40,70],rain:[60,120],ph:[5.5,7.5],
+why:"Pigeon pea generally fits warm conditions and moderate rainfall.",
+prec:"Avoid prolonged waterlogging and use the locally recommended sowing window and variety."},
+{name:"Groundnut",icon:"🥜",soil:["red","loamy","alluvial"],temp:[25,32],hum:[50,75],rain:[50,125],ph:[6.0,7.5],
+why:"Warm conditions and well-drained soil are generally favorable for groundnut.",
+prec:"Prevent waterlogging and monitor leaf diseases and pod pests according to local advice."},
+{name:"Rice",icon:"🌾",soil:["clay","loamy","alluvial"],temp:[20,35],hum:[70,95],rain:[120,300],ph:[5.5,7.2],
+why:"Rice generally benefits from warm conditions and high water availability.",
+prec:"Check irrigation and drainage. Rainfall alone may not provide enough water for the chosen rice system."},
+{name:"Wheat",icon:"🌾",soil:["loamy","alluvial","black"],temp:[10,25],hum:[40,70],rain:[30,100],ph:[6.0,7.5],
+why:"Wheat generally fits cooler growing conditions with moderate moisture.",
+prec:"Heat at sensitive growth stages can reduce performance. Use a locally recommended sowing date and variety."},
+{name:"Chickpea",icon:"🫘",soil:["red","loamy","black","alluvial"],temp:[15,28],hum:[35,65],rain:[30,80],ph:[6.0,8.0],
+why:"Chickpea generally fits moderate temperatures and lower-to-moderate rainfall.",
+prec:"Avoid excess irrigation and waterlogging. Monitor wilt and pod borer risk locally."}
+];
+
+function scoreRange(v,r){
+ const a=r[0],b=r[1];
+ if(v>=a&&v<=b)return 100;
+ const width=b-a;
+ const distance=v<a?a-v:v-b;
+ return Math.max(0,Math.round(100-(distance/(width||1))*50));
+}
+function calculate(c,soil,temp,hum,rain,ph){
+ const s=c.soil.includes(soil)?100:35;
+ const t=scoreRange(temp,c.temp);
+ const h=scoreRange(hum,c.hum);
+ const r=scoreRange(rain,c.rain);
+ const p=scoreRange(ph,c.ph);
+ const raw=Math.round(s*.25+t*.25+r*.25+h*.15+p*.10);
+ const final=Math.min(raw,95);
+ return {score:final,soil:s,temp:t,humidity:h,rain:r,ph:p};
+}
+function label(s){
+ if(s>=80)return ["Highly Suitable",""];
+ if(s>=65)return ["Suitable",""];
+ if(s>=50)return ["Moderately Suitable","mid"];
+ return ["Low Suitability","low"];
+}
+function recommend(){
+ const soil=document.getElementById("soil").value;
+ const temp=Number(document.getElementById("temp").value);
+ const hum=Number(document.getElementById("humidity").value);
+ const rain=Number(document.getElementById("rain").value);
+ const ph=Number(document.getElementById("ph").value);
+ const err=document.getElementById("error");
+ if(!soil||![temp,hum,rain,ph].every(Number.isFinite)){
+  err.textContent="Please enter all farm details.";err.style.display="block";return;
+ }
+ if(hum<0||hum>100){err.textContent="Humidity must be between 0% and 100%.";err.style.display="block";return}
+ if(rain<0){err.textContent="Rainfall cannot be negative.";err.style.display="block";return}
+ if(ph<0||ph>14){err.textContent="Soil pH must be between 0 and 14.";err.style.display="block";return}
+ err.style.display="none";
+
+ const ranked=crops.map(c=>({...c,...calculate(c,soil,temp,hum,rain,ph)})).sort((a,b)=>b.score-a.score);
+ const best=ranked[0];
+
+ document.getElementById("best").innerHTML=`<div class="best">
+ <h3>🏆 Best Match: ${best.icon} ${best.name}</h3>
+ <div class="best-score">${best.score}%</div>
+ <p>Suitability score based on the five entered factors.</p>
+ <small>This is a screening score, not a guarantee of yield.</small>
+ </div>`;
+
+ document.getElementById("rows").innerHTML=ranked.map((c,i)=>{
+  const [txt,cls]=label(c.score);
+  return `<tr><td>${i+1}</td><td><strong>${c.icon} ${c.name}</strong><span class="status ${cls}">${txt}</span></td><td>${c.score}%</td></tr>`;
+ }).join("");
+
+ document.getElementById("cards").innerHTML=ranked.map(c=>`
+ <div class="crop-card">
+  <h3>${c.icon} ${c.name} — ${c.score}%</h3>
+  <p><strong>Why:</strong> ${c.why}</p>
+  <p><strong>What the score means:</strong> The score shows how closely the entered soil and climate values match the prototype's defined range for this crop.</p>
+  <div class="factors">
+   <div class="factor"><strong>Soil</strong>${c.soil}%</div>
+   <div class="factor"><strong>Temp</strong>${c.temp}%</div>
+   <div class="factor"><strong>Rain</strong>${c.rain}%</div>
+   <div class="factor"><strong>Humidity</strong>${c.humidity}%</div>
+   <div class="factor"><strong>pH</strong>${c.ph}%</div>
+  </div>
+  <div class="precaution"><strong>⚠️ Precaution:</strong> ${c.prec}</div>
+ </div>`).join("");
+
+ document.getElementById("resultSection").classList.remove("hidden");
+ document.getElementById("resultSection").scrollIntoView({behavior:"smooth"});
+}
+</script>
+</body>
+</html>
